@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header, empty_state with context %}
+{% block title %}Workouts{% endblock %}
+{% block content %}
+  {% call page_header("Workouts", "Plan and log your training sessions.") %}
+    <button class="btn btn-primary">{{ icon('plus', 16) }} New workout</button>
+  {% endcall %}
+  {{ empty_state("list-checks", "No workouts yet", "Create your first workout to start tracking sets and reps.") }}
+{% endblock %}

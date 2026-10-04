@@ -1,0 +1,17 @@
+{% macro page_header(title, subtitle=None) -%}
+  <header class="page-header">
+    <div>
+      <h1>{{ title }}</h1>
+      {% if subtitle %}<p class="muted">{{ subtitle }}</p>{% endif %}
+    </div>
+    {{ caller() if caller }}
+  </header>
+{%- endmacro %}
+
+{% macro empty_state(icon_name, title, description) -%}
+  <div class="card empty-state">
+    <span class="empty-icon">{{ icon(icon_name, 22) }}</span>
+    <h3>{{ title }}</h3>
+    <p class="muted">{{ description }}</p>
+  </div>
+{%- endmacro %}

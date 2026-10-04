@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header, empty_state with context %}
+{% block title %}Progress{% endblock %}
+{% block content %}
+  {{ page_header("Progress", "Track strength and volume over time.") }}
+  {{ empty_state("line-chart", "Not enough data yet", "Log a few workouts and your progress charts will appear here.") }}
+{% endblock %}

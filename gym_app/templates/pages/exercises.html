@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header %}
+{% block title %}Exercises{% endblock %}
+{% block content %}
+  {{ page_header("Exercises", "Browse your exercise library.") }}
+  <label class="search">
+    {{ icon('search', 16) }}
+    <input type="search" placeholder="Search exercises" />
+  </label>
+  <ul class="card list">
+    {% for exercise in exercises %}
+      <li class="list-row">
+        <span>{{ exercise.name }}</span>
+        <span class="tag">{{ exercise.group }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

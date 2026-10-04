@@ -1,0 +1,10 @@
+<nav class="bottom-nav">
+  {% for item in nav_items %}
+    <a href="{{ url_for(item.endpoint) }}"
+       class="bottom-link{% if request.endpoint == item.endpoint %} active{% endif %}"
+       {% if request.endpoint == item.endpoint %}aria-current="page"{% endif %}>
+      {{ icon(item.icon, 20) }}
+      <span>{{ item.label }}</span>
+    </a>
+  {% endfor %}
+</nav>

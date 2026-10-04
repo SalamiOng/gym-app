@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+  {% call page_header("Dashboard", "Welcome back. Here's your week at a glance.") %}
+    <a href="{{ url_for('main.workouts') }}" class="btn btn-primary">{{ icon('plus', 16) }} Start workout</a>
+  {% endcall %}
+
+  <section class="stat-grid">
+    {% for stat in stats %}
+      <div class="card stat">
+        <span class="stat-icon">{{ icon(stat.icon) }}</span>
+        <span class="stat-value">{{ stat.value }}</span>
+        <span class="muted">{{ stat.label }}</span>
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Recent activity</h2>
+    <p class="muted">No workouts logged yet. Your sessions will show up here.</p>
+  </section>
+{% endblock %}

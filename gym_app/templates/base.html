@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <title>{% block title %}{% endblock %} · Gym</title>
+  </head>
+  <body>
+    <div class="app">
+      {% include "partials/sidebar.html" %}
+      <main class="main">
+        {% block content %}{% endblock %}
+      </main>
+      {% include "partials/bottom_nav.html" %}
+    </div>
+  </body>
+</html>
