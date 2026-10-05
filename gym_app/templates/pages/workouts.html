@@ -1,9 +1,59 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import page_header, empty_state with context %}
+{% from "partials/macros.html" import page_header %}
 {% block title %}Workouts{% endblock %}
+
+{% macro field(name, label, type="text") -%}
+  <label class="field{% if errors[name] %} has-error{% endif %}">
+    <span>{{ label }}</span>
+    <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.get(name, '') }}"
+           {% if errors[name] %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+           {{ caller() if caller }} />
+    {% if errors[name] %}<small class="field-error" id="{{ name }}-error">{{ errors[name] }}</small>{% endif %}
+  </label>
+{%- endmacro %}
+
 {% block content %}
-  {% call page_header("Workouts", "Plan and log your training sessions.") %}
-    <button class="btn btn-primary">{{ icon('plus', 16) }} New workout</button>
-  {% endcall %}
-  {{ empty_state("list-checks", "No workouts yet", "Create your first workout to start tracking sets and reps.") }}
+  {{ page_header("Workouts", "Log a set and see your training history.") }}
+
+  <form method="post" action="{{ url_for('main.workouts') }}" class="card workout-form">
+    <h2>Log exercise</h2>
+    <div class="form-grid">
+      <div class="span-full">
+        {% call field("exercise", "Exercise") %}list="exercise-names" required maxlength="100" placeholder="e.g. Bench Press" autocomplete="off"{% endcall %}
+        <datalist id="exercise-names">
+          {% for name in exercise_names %}<option value="{{ name }}"></option>{% endfor %}
+        </datalist>
+      </div>
+      {% call field("sets", "Sets", "number") %}required min="1" max="100" step="1" inputmode="numeric"{% endcall %}
+      {% call field("reps", "Reps", "number") %}required min="1" max="1000" step="1" inputmode="numeric"{% endcall %}
+      {% call field("weight", "Weight (kg)", "number") %}required min="0" max="2000" step="0.5" inputmode="decimal"{% endcall %}
+      {% call field("performed_on", "Date", "date") %}required{% endcall %}
+    </div>
+    <button type="submit" class="btn btn-primary">{{ icon('plus', 16) }} Save</button>
+  </form>
+
+  <section class="card history">
+    <h2>History</h2>
+    {% if workouts %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Date</th><th>Exercise</th><th class="num">Sets × Reps</th><th class="num">Weight</th></tr>
+          </thead>
+          <tbody>
+            {% for w in workouts %}
+              <tr>
+                <td class="muted">{{ w.performed_on.strftime('%a') }} {{ w.performed_on.day }} {{ w.performed_on.strftime('%b') }}</td>
+                <td>{{ w.exercise }}</td>
+                <td class="num">{{ w.sets }} × {{ w.reps }}</td>
+                <td class="num">{{ w.weight | weight }} kg</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No workouts logged yet. Use the form above to add your first one.</p>
+    {% endif %}
+  </section>
 {% endblock %}

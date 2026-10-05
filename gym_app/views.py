@@ -1,4 +1,9 @@
-from flask import Blueprint, render_template
+from datetime import date
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+
+from .forms import validate_workout
+from .workouts import add_workout, list_workouts
 
 bp = Blueprint("main", __name__)
 
@@ -22,9 +27,27 @@ def dashboard():
     return render_template("pages/dashboard.html", stats=stats)
 
 
-@bp.route("/workouts")
+@bp.route("/workouts", methods=["GET", "POST"])
 def workouts():
-    return render_template("pages/workouts.html")
+    errors = {}
+    form = {"performed_on": date.today().isoformat()}
+
+    if request.method == "POST":
+        entry, errors = validate_workout(request.form)
+        if entry:
+            add_workout(entry)
+            flash(f"Saved {entry.exercise}.")
+            # Redirect so refreshing the page doesn't submit the form again.
+            return redirect(url_for("main.workouts"))
+        form = request.form
+
+    return render_template(
+        "pages/workouts.html",
+        form=form,
+        errors=errors,
+        workouts=list_workouts(),
+        exercise_names=[e["name"] for e in EXERCISES],
+    ), 400 if errors else 200
 
 
 @bp.route("/exercises")
