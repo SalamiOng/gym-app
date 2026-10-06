@@ -1,0 +1,23 @@
+{# Shared by the "log" and "edit" forms. Expects `form`, `errors` and `exercise_names`. #}
+{% macro field(name, label, type="text") -%}
+  <label class="field{% if errors[name] %} has-error{% endif %}">
+    <span>{{ label }}</span>
+    <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.get(name, '') }}"
+           {% if errors[name] %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+           {{ caller() if caller }} />
+    {% if errors[name] %}<small class="field-error" id="{{ name }}-error">{{ errors[name] }}</small>{% endif %}
+  </label>
+{%- endmacro %}
+
+<div class="form-grid">
+  <div class="span-full">
+    {% call field("exercise", "Exercise") %}list="exercise-names" required maxlength="100" placeholder="e.g. Bench Press" autocomplete="off"{% endcall %}
+    <datalist id="exercise-names">
+      {% for name in exercise_names %}<option value="{{ name }}"></option>{% endfor %}
+    </datalist>
+  </div>
+  {% call field("sets", "Sets", "number") %}required min="1" max="100" step="1" inputmode="numeric"{% endcall %}
+  {% call field("reps", "Reps", "number") %}required min="1" max="1000" step="1" inputmode="numeric"{% endcall %}
+  {% call field("weight", "Weight (kg)", "number") %}required min="0" max="2000" step="0.5" inputmode="decimal"{% endcall %}
+  {% call field("performed_on", "Date", "date") %}required{% endcall %}
+</div>

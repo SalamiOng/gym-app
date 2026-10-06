@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header %}
+{% block title %}Edit workout{% endblock %}
+
+{% block content %}
+  {{ page_header("Edit workout", "Change any details, then save.") }}
+
+  <form method="post" action="{{ url_for('main.history_edit', workout_id=workout.id) }}" class="card workout-form">
+    <h2>{{ workout.exercise }}</h2>
+    {% include "partials/workout_fields.html" %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save changes</button>
+      <a href="{{ url_for('main.history') }}" class="btn">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

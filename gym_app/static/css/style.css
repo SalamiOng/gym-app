@@ -300,6 +300,27 @@ a {
   color: var(--accent-ink);
 }
 
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 0.8rem;
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  filter: none;
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* Lists */
 
 .list {
@@ -495,6 +516,25 @@ a {
 .table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.row-actions form {
+  margin: 0;
+}
+
+/* Hidden on screen but still read by screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

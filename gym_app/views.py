@@ -1,9 +1,9 @@
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from .forms import validate_workout
-from .workouts import add_workout, list_workouts
+from .workouts import add_workout, delete_workout, get_workout, list_workouts, update_workout
 
 bp = Blueprint("main", __name__)
 
@@ -45,9 +45,56 @@ def workouts():
         "pages/workouts.html",
         form=form,
         errors=errors,
-        workouts=list_workouts(),
         exercise_names=[e["name"] for e in EXERCISES],
     ), 400 if errors else 200
+
+
+@bp.route("/history")
+def history():
+    return render_template("pages/history.html", workouts=list_workouts())
+
+
+@bp.route("/history/<int:workout_id>/edit", methods=["GET", "POST"])
+def history_edit(workout_id: int):
+    workout = get_workout(workout_id)
+    if workout is None:
+        abort(404)
+
+    errors = {}
+    # Pre-fill the form with the saved values.
+    form = {
+        "exercise": workout["exercise"],
+        "sets": workout["sets"],
+        "reps": workout["reps"],
+        "weight": f"{workout['weight']:g}",
+        "performed_on": workout["performed_on"].isoformat(),
+    }
+
+    if request.method == "POST":
+        entry, errors = validate_workout(request.form)
+        if entry:
+            if not update_workout(workout_id, entry):
+                abort(404)
+            flash(f"Updated {entry.exercise}.")
+            return redirect(url_for("main.history"))
+        form = request.form
+
+    return render_template(
+        "pages/edit_workout.html",
+        workout=workout,
+        form=form,
+        errors=errors,
+        exercise_names=[e["name"] for e in EXERCISES],
+    ), 400 if errors else 200
+
+
+# POST only: a plain link (GET) could be triggered by accident, e.g. by a browser prefetching it.
+@bp.route("/history/<int:workout_id>/delete", methods=["POST"])
+def history_delete(workout_id: int):
+    if not delete_workout(workout_id):
+        abort(404)
+    flash("Workout deleted.")
+    return redirect(url_for("main.history"))
 
 
 @bp.route("/exercises")

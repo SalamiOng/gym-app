@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header, empty_state with context %}
+{% block title %}History{% endblock %}
+
+{% block content %}
+  {% call page_header("History", "Every workout you've logged. Edit or delete any entry.") %}
+    <a href="{{ url_for('main.workouts') }}" class="btn btn-primary">{{ icon('plus', 16) }} Log workout</a>
+  {% endcall %}
+
+  {% if workouts %}
+    <section class="card history">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Exercise</th><th class="num">Sets × Reps</th><th class="num">Weight</th>
+              <th class="num"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for w in workouts %}
+              <tr>
+                <td class="muted">{{ w.performed_on.strftime('%a') }} {{ w.performed_on.day }} {{ w.performed_on.strftime('%b') }}</td>
+                <td>{{ w.exercise }}</td>
+                <td class="num">{{ w.sets }} × {{ w.reps }}</td>
+                <td class="num">{{ w.weight | weight }} kg</td>
+                <td class="num">
+                  <div class="row-actions">
+                    <a href="{{ url_for('main.history_edit', workout_id=w.id) }}" class="btn btn-sm"
+                       aria-label="Edit {{ w.exercise }}">{{ icon('pencil', 14) }} Edit</a>
+                    <form method="post" action="{{ url_for('main.history_delete', workout_id=w.id) }}"
+                          onsubmit="return confirm('Delete this workout? This cannot be undone.');">
+                      <button type="submit" class="btn btn-sm btn-danger"
+                              aria-label="Delete {{ w.exercise }}">{{ icon('trash', 14) }} Delete</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% else %}
+    {{ empty_state("history", "No workouts yet", "Workouts you log will show up here.") }}
+  {% endif %}
+{% endblock %}

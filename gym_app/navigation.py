@@ -11,6 +11,7 @@ class NavItem:
 NAV_ITEMS = [
     NavItem("main.dashboard", "Dashboard", "layout-dashboard"),
     NavItem("main.workouts", "Workouts", "list-checks"),
+    NavItem("main.history", "History", "history"),
     NavItem("main.exercises", "Exercises", "dumbbell"),
     NavItem("main.progress", "Progress", "line-chart"),
     NavItem("main.profile", "Profile", "user"),
