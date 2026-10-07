@@ -5,6 +5,7 @@ MAX_EXERCISE_LENGTH = 100
 MAX_SETS = 100
 MAX_REPS = 1000
 MAX_WEIGHT = 2000
+MAX_BODY_WEIGHT_LB = 1500
 
 
 @dataclass
@@ -14,6 +15,22 @@ class WorkoutEntry:
     reps: int
     weight: float
     performed_on: date
+
+
+@dataclass
+class BodyWeightEntry:
+    weight_lb: float
+    measured_on: date
+
+
+def _parse_past_date(value: str) -> tuple[date | None, str | None]:
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return None, "Enter a valid date."
+    if parsed > date.today():
+        return None, "Date can't be in the future."
+    return parsed, None
 
 
 def _parse_int(value: str, label: str, maximum: int) -> tuple[int | None, str | None]:
@@ -53,15 +70,32 @@ def validate_workout(form) -> tuple[WorkoutEntry | None, dict[str, str]]:
         if not 0 <= weight <= MAX_WEIGHT:  # also rejects nan
             errors["weight"] = f"Weight must be between 0 and {MAX_WEIGHT}."
 
-    performed_on = None
-    try:
-        performed_on = date.fromisoformat(form.get("performed_on", "").strip())
-    except ValueError:
-        errors["performed_on"] = "Enter a valid date."
-    else:
-        if performed_on > date.today():
-            errors["performed_on"] = "Date can't be in the future."
+    performed_on, error = _parse_past_date(form.get("performed_on", "").strip())
+    if error:
+        errors["performed_on"] = error
 
     if errors:
         return None, errors
     return WorkoutEntry(exercise, sets, reps, weight, performed_on), {}
+
+
+def validate_body_weight(form) -> tuple[BodyWeightEntry | None, dict[str, str]]:
+    """Check submitted form data. Returns (entry, {}) if valid, else (None, errors by field)."""
+    errors: dict[str, str] = {}
+
+    weight_lb = None
+    try:
+        weight_lb = float(form.get("weight_lb", "").strip())
+    except ValueError:
+        errors["weight_lb"] = "Weight must be a number, e.g. 172.4."
+    else:
+        if not 0 < weight_lb <= MAX_BODY_WEIGHT_LB:  # also rejects nan and inf
+            errors["weight_lb"] = f"Weight must be more than 0 and at most {MAX_BODY_WEIGHT_LB} lb."
+
+    measured_on, error = _parse_past_date(form.get("measured_on", "").strip())
+    if error:
+        errors["measured_on"] = error
+
+    if errors:
+        return None, errors
+    return BodyWeightEntry(weight_lb, measured_on), {}

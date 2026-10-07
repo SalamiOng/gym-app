@@ -8,6 +8,17 @@
   </header>
 {%- endmacro %}
 
+{# A labelled input. Import `with context`: it reads `form` and `errors` from the page. #}
+{% macro field(name, label, type="text") -%}
+  <label class="field{% if errors[name] %} has-error{% endif %}">
+    <span>{{ label }}</span>
+    <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.get(name, '') }}"
+           {% if errors[name] %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+           {{ caller() if caller }} />
+    {% if errors[name] %}<small class="field-error" id="{{ name }}-error">{{ errors[name] }}</small>{% endif %}
+  </label>
+{%- endmacro %}
+
 {% macro empty_state(icon_name, title, description) -%}
   <div class="card empty-state">
     <span class="empty-icon">{{ icon(icon_name, 22) }}</span>

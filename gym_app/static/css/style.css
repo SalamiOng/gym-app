@@ -475,6 +475,18 @@ a {
   }
 }
 
+/* Two-field forms (e.g. body weight): side by side, but not stretched across wide screens. */
+.form-grid.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 520px;
+}
+
+@media (max-width: 380px) {
+  .form-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* History table */
 
 .history h2 {

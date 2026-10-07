@@ -9,3 +9,12 @@ CREATE TABLE IF NOT EXISTS workouts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_workouts_performed_on ON workouts (performed_on);
+
+CREATE TABLE IF NOT EXISTS body_weights (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    weight_lb REAL NOT NULL CHECK (weight_lb > 0),
+    measured_on TEXT NOT NULL,  -- ISO date, YYYY-MM-DD
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_body_weights_measured_on ON body_weights (measured_on);

@@ -1,7 +1,66 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import page_header, empty_state with context %}
+{% from "partials/macros.html" import page_header, empty_state, field with context %}
 {% block title %}Progress{% endblock %}
+
+{% macro short_date(d) -%}
+  {{ d.day }} {{ d.strftime('%b %Y') }}
+{%- endmacro %}
+
 {% block content %}
-  {{ page_header("Progress", "Track strength and volume over time.") }}
-  {{ empty_state("line-chart", "Not enough data yet", "Log a few workouts and your progress charts will appear here.") }}
+  {{ page_header("Progress", "Track your body weight over time.") }}
+
+  {% if summary %}
+    <section class="stat-grid">
+      <div class="card stat">
+        <span class="stat-icon">{{ icon('scale') }}</span>
+        <span class="stat-value">{{ summary.latest.weight_lb | weight }} lb</span>
+        <span class="muted">Latest weight · {{ short_date(summary.latest.measured_on) }}</span>
+      </div>
+      <div class="card stat">
+        <span class="stat-icon">{{ icon('line-chart') }}</span>
+        {% if summary.change is none %}
+          <span class="stat-value">–</span>
+          <span class="muted">Change since first entry · log one more to compare</span>
+        {% elif summary.change == 0 %}
+          <span class="stat-value">No change</span>
+          <span class="muted">Since {{ short_date(summary.earliest.measured_on) }}</span>
+        {% else %}
+          <span class="stat-value">{{ '+' if summary.change > 0 else '' }}{{ summary.change | weight }} lb</span>
+          <span class="muted">Since {{ short_date(summary.earliest.measured_on) }}</span>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('main.progress') }}" class="card workout-form">
+    <h2>Log body weight</h2>
+    <div class="form-grid cols-2">
+      {% call field("weight_lb", "Weight (lb)", "number") %}required min="0.1" max="1500" step="any" inputmode="decimal" placeholder="e.g. 172.4"{% endcall %}
+      {% call field("measured_on", "Date", "date") %}required max="{{ today }}"{% endcall %}
+    </div>
+    <button type="submit" class="btn btn-primary">{{ icon('plus', 16) }} Save</button>
+  </form>
+
+  {% if entries %}
+    <section class="card history">
+      <h2>Entries</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Date</th><th class="num">Weight</th></tr>
+          </thead>
+          <tbody>
+            {% for e in entries %}
+              <tr>
+                <td class="muted">{{ e.measured_on.strftime('%a') }} {{ e.measured_on.day }} {{ e.measured_on.strftime('%b %Y') }}</td>
+                <td class="num">{{ e.weight_lb | weight }} lb</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% else %}
+    {{ empty_state("scale", "No body weight logged yet", "Add your first entry above to start tracking.") }}
+  {% endif %}
 {% endblock %}

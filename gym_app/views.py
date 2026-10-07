@@ -2,7 +2,8 @@ from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from .forms import validate_workout
+from .body_weights import add_body_weight, list_body_weights, summarize
+from .forms import validate_body_weight, validate_workout
 from .workouts import add_workout, delete_workout, get_workout, list_workouts, update_workout
 
 bp = Blueprint("main", __name__)
@@ -102,9 +103,28 @@ def exercises():
     return render_template("pages/exercises.html", exercises=EXERCISES)
 
 
-@bp.route("/progress")
+@bp.route("/progress", methods=["GET", "POST"])
 def progress():
-    return render_template("pages/progress.html")
+    errors = {}
+    form = {"measured_on": date.today().isoformat()}
+
+    if request.method == "POST":
+        entry, errors = validate_body_weight(request.form)
+        if entry:
+            add_body_weight(entry)
+            flash(f"Saved {entry.weight_lb:g} lb.")
+            return redirect(url_for("main.progress"))
+        form = request.form
+
+    entries = list_body_weights()
+    return render_template(
+        "pages/progress.html",
+        form=form,
+        errors=errors,
+        entries=entries,
+        summary=summarize(entries),
+        today=date.today().isoformat(),
+    ), 400 if errors else 200
 
 
 @bp.route("/profile")
