@@ -21,6 +21,15 @@ def list_body_weights() -> list[dict]:
     return [{**row, "measured_on": date.fromisoformat(row["measured_on"])} for row in rows]
 
 
+def daily_series(entries: list[dict]) -> list[tuple[date, float]]:
+    """One (date, weight) per day for charting, oldest first. If a day has several entries, the last one added wins.
+    `entries` must be ordered as list_body_weights returns them."""
+    latest_per_day: dict[date, float] = {}
+    for entry in entries:  # newest-added first within a day, so keep the first seen
+        latest_per_day.setdefault(entry["measured_on"], entry["weight_lb"])
+    return sorted(latest_per_day.items())
+
+
 def summarize(entries: list[dict]) -> dict | None:
     """Latest entry and change since the earliest. `entries` must be ordered as list_body_weights returns them."""
     if not entries:

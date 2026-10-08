@@ -24,5 +24,36 @@
     <span class="empty-icon">{{ icon(icon_name, 22) }}</span>
     <h3>{{ title }}</h3>
     <p class="muted">{{ description }}</p>
+    {% if caller %}<div class="empty-actions">{{ caller() }}</div>{% endif %}
   </div>
+{%- endmacro %}
+
+{# Draws a chart from charts.line_chart. Lines and dots are SVG; axis labels are HTML so they stay readable on phones. #}
+{% macro line_chart(chart, label) -%}
+  <figure class="chart" role="img" aria-label="{{ label }}">
+    <div class="chart-plot">
+      {% for tick in chart.y_ticks %}
+        <span class="chart-y" style="top: {{ tick.y }}%">{{ tick.label }}</span>
+      {% endfor %}
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        {% for tick in chart.y_ticks %}
+          <line class="chart-grid" x1="0" x2="100" y1="{{ tick.y }}" y2="{{ tick.y }}" />
+        {% endfor %}
+        {% if chart.points | length > 1 %}
+          <polyline class="chart-line" points="{{ chart.polyline }}" />
+        {% endif %}
+        {% for point in chart.points %}
+          {# Zero-length paths with round caps draw as circles that stay round when the chart stretches. #}
+          <g class="chart-point">
+            <title>{{ point.label }}</title>
+            <path class="chart-dot-ring" d="M{{ point.x }} {{ point.y }}h0" />
+            <path class="chart-dot" d="M{{ point.x }} {{ point.y }}h0" />
+          </g>
+        {% endfor %}
+      </svg>
+    </div>
+    <div class="chart-x{% if chart.x_labels | length == 1 %} single{% endif %}">
+      {% for text in chart.x_labels %}<span>{{ text }}</span>{% endfor %}
+    </div>
+  </figure>
 {%- endmacro %}

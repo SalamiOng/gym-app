@@ -555,3 +555,169 @@ a {
     padding: 10px 12px;
   }
 }
+
+/* Progress page */
+
+.section-title {
+  font-size: 1.15rem;
+  margin: 12px 0 -4px;
+}
+
+.stat-value-text {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.chart-filter {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+.select {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 100%;
+}
+
+.select:focus {
+  outline: 2px solid var(--text);
+  outline-offset: -1px;
+}
+
+.notice {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--hover);
+  font-size: 0.85rem;
+}
+
+.chart {
+  margin: 0;
+}
+
+.chart-plot {
+  position: relative;
+  height: 220px;
+  margin-left: 44px;
+}
+
+.chart-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.chart-grid,
+.chart-line,
+.chart-point path {
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-point path {
+  stroke-linecap: round;
+}
+
+.chart-dot-ring {
+  stroke: var(--text);
+  stroke-width: 11;
+}
+
+.chart-dot {
+  stroke: var(--accent);
+  stroke-width: 5;
+}
+
+.chart-point:hover .chart-dot-ring {
+  stroke-width: 14;
+}
+
+.chart-y {
+  position: absolute;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-x {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 0 44px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chart-x.single {
+  justify-content: center;
+}
+
+.chart-caption {
+  margin-top: 14px;
+}
+
+.change {
+  color: var(--text);
+}
+
+.table td.strong {
+  font-weight: 500;
+}
+
+/* The History table bolds and wraps column 2 (exercise); number columns shouldn't. */
+.table td.num:nth-child(2) {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.link {
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  text-decoration-color: currentColor;
+}
+
+.table-note {
+  margin: -8px 0 12px;
+  font-size: 0.8rem;
+}
+
+.empty-actions {
+  margin-top: 12px;
+}

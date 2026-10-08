@@ -2,8 +2,10 @@ from datetime import date
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from .body_weights import add_body_weight, list_body_weights, summarize
+from .body_weights import add_body_weight, daily_series, list_body_weights, summarize
+from .charts import line_chart
 from .forms import validate_body_weight, validate_workout
+from .stats import exercise_summaries, find_exercise, strength_series, workout_stats
 from .workouts import add_workout, delete_workout, get_workout, list_workouts, update_workout
 
 bp = Blueprint("main", __name__)
@@ -117,12 +119,29 @@ def progress():
         form = request.form
 
     entries = list_body_weights()
+    workouts = list_workouts()
+    exercises = exercise_summaries(workouts)
+
+    # ?exercise=Squat picks the strength chart; default to the most recently trained exercise.
+    requested = request.args.get("exercise", "").strip()
+    selected = find_exercise(exercises, requested) if requested else None
+    if selected is None and exercises:
+        selected = exercises[0]
+    strength = strength_series(workouts, selected.key) if selected else None
+
     return render_template(
         "pages/progress.html",
         form=form,
         errors=errors,
         entries=entries,
         summary=summarize(entries),
+        weight_chart=line_chart(daily_series(entries), "lb"),
+        stats=workout_stats(workouts, exercises, date.today()),
+        exercises=exercises,
+        selected=selected,
+        unknown_exercise=requested if requested and find_exercise(exercises, requested) is None else None,
+        strength=strength,
+        strength_chart=line_chart(strength["points"], strength["unit"]) if strength else None,
         today=date.today().isoformat(),
     ), 400 if errors else 200
 

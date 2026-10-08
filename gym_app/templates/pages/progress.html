@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import page_header, empty_state, field with context %}
+{% from "partials/macros.html" import page_header, empty_state, field, line_chart with context %}
 {% block title %}Progress{% endblock %}
 
 {% macro short_date(d) -%}
@@ -7,7 +7,105 @@
 {%- endmacro %}
 
 {% block content %}
-  {{ page_header("Progress", "Track your body weight over time.") }}
+  {{ page_header("Progress", "Your training stats, strength gains and body weight over time.") }}
+
+  <h2 class="section-title">Workouts</h2>
+
+  {% if stats %}
+    <section class="stat-grid">
+      <div class="card stat">
+        <span class="stat-icon">{{ icon('history') }}</span>
+        <span class="stat-value">{{ stats.training_days }}</span>
+        <span class="muted">Training {{ 'day' if stats.training_days == 1 else 'days' }} · {{ stats.days_this_week }} this week</span>
+      </div>
+      <div class="card stat">
+        <span class="stat-icon">{{ icon('list-checks') }}</span>
+        <span class="stat-value">{{ stats.sets }}</span>
+        <span class="muted">Total sets · {{ stats.entries }} {{ 'entry' if stats.entries == 1 else 'entries' }} logged</span>
+      </div>
+      <div class="card stat">
+        <span class="stat-icon">{{ icon('dumbbell') }}</span>
+        <span class="stat-value">{{ '{:,}'.format(stats.volume) }} kg</span>
+        <span class="muted">Total volume (sets × reps × weight)</span>
+      </div>
+      <div class="card stat">
+        <span class="stat-icon">{{ icon('trophy') }}</span>
+        <span class="stat-value stat-value-text">{{ stats.most_trained.name }}</span>
+        <span class="muted">Most trained · {{ stats.most_trained.sessions }} {{ 'session' if stats.most_trained.sessions == 1 else 'sessions' }}</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Strength progression</h2>
+          <p class="muted">{{ strength.metric }} ({{ strength.unit }})</p>
+        </div>
+        <form method="get" action="{{ url_for('main.progress') }}" class="chart-filter">
+          <label class="visually-hidden" for="exercise-select">Exercise</label>
+          <select id="exercise-select" name="exercise" class="select" onchange="this.form.submit()">
+            {% for exercise in exercises %}
+              <option value="{{ exercise.name }}"{% if exercise.key == selected.key %} selected{% endif %}>{{ exercise.name }}</option>
+            {% endfor %}
+          </select>
+          <noscript><button type="submit" class="btn btn-sm">Show</button></noscript>
+        </form>
+      </div>
+
+      {% if unknown_exercise %}
+        <p class="notice" role="status">No workouts found for “{{ unknown_exercise }}”. Showing {{ selected.name }} instead.</p>
+      {% endif %}
+
+      {{ line_chart(strength_chart, strength.metric ~ " for " ~ selected.name) }}
+
+      <p class="muted chart-caption">
+        {% if strength.change is none %}
+          One session so far. Log {{ selected.name }} on another day to see a trend.
+        {% elif strength.change == 0 %}
+          No change since {{ short_date(strength.since) }}.
+        {% else %}
+          <strong class="change">{{ '+' if strength.change > 0 else '' }}{{ strength.change | weight }} {{ strength.unit }}</strong>
+          since {{ short_date(strength.since) }}.
+        {% endif %}
+      </p>
+    </section>
+
+    <section class="card history">
+      <h2>Personal records</h2>
+      <p class="muted table-note">Est. 1RM is your estimated one-rep max (Epley formula), most reliable for sets of 10 reps or fewer.</p>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Exercise</th><th class="num">Best set</th><th class="num">Est. 1RM</th>
+              <th class="num">Sessions</th><th class="num">Last trained</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exercise in exercises %}
+              <tr>
+                <td class="strong">
+                  <a href="{{ url_for('main.progress', exercise=exercise.name) }}" class="link">{{ exercise.name }}</a>
+                </td>
+                <td class="num">
+                  {% if exercise.best_weight > 0 %}{{ exercise.best_weight | weight }} kg × {{ exercise.best_reps }}{% else %}Bodyweight{% endif %}
+                </td>
+                <td class="num">{% if exercise.best_1rm > 0 %}{{ exercise.best_1rm | weight }} kg{% else %}–{% endif %}</td>
+                <td class="num">{{ exercise.sessions }}</td>
+                <td class="num muted">{{ short_date(exercise.last_on) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% else %}
+    {% call empty_state("dumbbell", "No workouts logged yet", "Log a workout to see your stats, strength graph and personal records.") %}
+      <a href="{{ url_for('main.workouts') }}" class="btn btn-primary">{{ icon('plus', 16) }} Log workout</a>
+    {% endcall %}
+  {% endif %}
+
+  <h2 class="section-title">Body weight</h2>
 
   {% if summary %}
     <section class="stat-grid">
@@ -29,6 +127,21 @@
           <span class="muted">Since {{ short_date(summary.earliest.measured_on) }}</span>
         {% endif %}
       </div>
+    </section>
+  {% endif %}
+
+  {% if weight_chart %}
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Weight trend</h2>
+          <p class="muted">One point per day (lb)</p>
+        </div>
+      </div>
+      {{ line_chart(weight_chart, "Body weight over time") }}
+      {% if weight_chart.points | length == 1 %}
+        <p class="muted chart-caption">Log your weight on another day to see a trend.</p>
+      {% endif %}
     </section>
   {% endif %}
 
