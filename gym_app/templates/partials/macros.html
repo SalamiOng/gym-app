@@ -19,6 +19,20 @@
   </label>
 {%- endmacro %}
 
+{# A labelled dropdown, styled like `field`. `options` is a list of (value, text) pairs. Import `with context`. #}
+{% macro select_field(name, label, options) -%}
+  <label class="field{% if errors[name] %} has-error{% endif %}">
+    <span>{{ label }}</span>
+    <select id="{{ name }}" name="{{ name }}"
+            {% if errors[name] %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+      {% for value, text in options %}
+        <option value="{{ value }}"{% if form.get(name) == value %} selected{% endif %}>{{ text }}</option>
+      {% endfor %}
+    </select>
+    {% if errors[name] %}<small class="field-error" id="{{ name }}-error">{{ errors[name] }}</small>{% endif %}
+  </label>
+{%- endmacro %}
+
 {% macro empty_state(icon_name, title, description) -%}
   <div class="card empty-state">
     <span class="empty-icon">{{ icon(icon_name, 22) }}</span>

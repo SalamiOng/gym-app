@@ -14,5 +14,6 @@ NAV_ITEMS = [
     NavItem("main.history", "History", "history"),
     NavItem("main.exercises", "Exercises", "dumbbell"),
     NavItem("main.progress", "Progress", "line-chart"),
+    NavItem("main.nutrition", "Nutrition", "apple"),
     NavItem("main.profile", "Profile", "user"),
 ]

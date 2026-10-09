@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header, field with context %}
+{% block title %}Nutrition goals{% endblock %}
+
+{% block content %}
+  {{ page_header("Daily goals", "Targets for each day. Leave a box empty if you don't want a goal for it.") }}
+
+  <form method="post" action="{{ form_action }}" class="card workout-form">
+    <h2>Goals</h2>
+    <div class="form-grid">
+      {% call field("calories", "Calories (kcal)", "number") %}min="1" max="20000" step="any" inputmode="decimal" placeholder="e.g. 2200"{% endcall %}
+      {% call field("protein_g", "Protein (g)", "number") %}min="1" max="2000" step="any" inputmode="decimal" placeholder="e.g. 150"{% endcall %}
+      {% call field("carbs_g", "Carbs (g)", "number") %}min="1" max="2000" step="any" inputmode="decimal" placeholder="e.g. 250"{% endcall %}
+      {% call field("fat_g", "Fat (g)", "number") %}min="1" max="2000" step="any" inputmode="decimal" placeholder="e.g. 70"{% endcall %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save goals</button>
+      <a href="{{ back_url }}" class="btn">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

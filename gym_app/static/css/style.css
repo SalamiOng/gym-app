@@ -202,6 +202,18 @@ a {
   .bottom-link.active {
     color: var(--text);
   }
+
+  /* With 7 tabs, long labels on narrow phones are shortened ("Exerci…") instead of overlapping. */
+  .bottom-link {
+    min-width: 0;
+  }
+
+  .bottom-link span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* Page header */
@@ -443,7 +455,8 @@ a {
   font-weight: 500;
 }
 
-.field input {
+.field input,
+.field select {
   font: inherit;
   font-weight: 400;
   width: 100%;
@@ -454,12 +467,14 @@ a {
   color: var(--text);
 }
 
-.field input:focus {
+.field input:focus,
+.field select:focus {
   outline: 2px solid var(--text);
   outline-offset: -1px;
 }
 
-.field.has-error input {
+.field.has-error input,
+.field.has-error select {
   border-color: var(--danger);
 }
 
@@ -720,4 +735,107 @@ a {
 
 .empty-actions {
   margin-top: 12px;
+}
+
+/* Nutrition page */
+
+.span-2 {
+  grid-column: span 2;
+}
+
+/* Smaller cards so the four daily totals sit two-up on phones. */
+.stat-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.stat-value small {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.meter {
+  height: 6px;
+  margin: 8px 0 2px;
+  border-radius: 999px;
+  background: var(--hover);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.goal-text {
+  font-size: 0.8rem;
+}
+
+.goal-text .over {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+}
+
+.day-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.day-label {
+  font-weight: 600;
+}
+
+.btn.is-disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  /* Arrows only, so the date picker fits between them. */
+  .day-nav .btn span {
+    display: none;
+  }
+
+  .day-label {
+    display: none;
+  }
+}
+
+.meal-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.history .meal-header h2 {
+  margin-bottom: 0;
+}
+
+.table td.wrap {
+  white-space: normal;
+  min-width: 140px;
+}
+
+.serving {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
 }

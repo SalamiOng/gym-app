@@ -21,6 +21,8 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.jinja_env.globals["icon"] = icon
     app.jinja_env.globals["nav_items"] = NAV_ITEMS
     app.jinja_env.filters["weight"] = lambda value: f"{value:g}"
+    # Nutrition numbers: at most one decimal place, with thousands separators (1,850 or 32.5).
+    app.jinja_env.filters["amount"] = lambda value: f"{round(value, 1):,g}"
 
     db.init_app(app)
 

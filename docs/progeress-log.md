@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-10-08: Nutrition tracking (uncommitted)
+
+- Added a Nutrition page: log foods (name, serving size, calories, protein, carbs, fat) under breakfast, lunch, dinner or snacks.
+- Added editing and deleting of food entries (delete is POST-only, like workouts).
+- Added daily totals and per-meal subtotals, one day at a time (`?date=YYYY-MM-DD`, Previous/Next, date picker).
+- Added optional daily goals for calories and macros on `/nutrition/goals`, with "left" / "over" and a progress bar.
+- New tables `foods` and `nutrition_goals` (a single row); existing databases get them automatically on start.
+- New module `nutrition.py`; new `select_field` macro; added a Nutrition tab to the menu.
+- Added `tests/test_nutrition.py` (28 tests). All 53 tests pass.
+
 ## 2026-10-07: Progress page charts and stats (uncommitted)
 
 - Added a body-weight line chart (one point per day; the last entry added wins).

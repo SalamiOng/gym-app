@@ -1,0 +1,15 @@
+{# Shared by the "log food" and "edit food" forms. Expects `form`, `errors` and `meal_options`. #}
+{% from "partials/macros.html" import field, select_field with context %}
+
+<div class="form-grid">
+  <div class="span-2">
+    {% call field("name", "Food") %}required maxlength="100" placeholder="e.g. Greek yogurt" autocomplete="off"{% endcall %}
+  </div>
+  {% call field("serving", "Serving size") %}required maxlength="50" placeholder="e.g. 1 cup"{% endcall %}
+  {{ select_field("meal", "Meal", meal_options) }}
+  {% call field("calories", "Calories (kcal)", "number") %}required min="0" max="20000" step="any" inputmode="decimal"{% endcall %}
+  {% call field("protein_g", "Protein (g)", "number") %}required min="0" max="2000" step="any" inputmode="decimal"{% endcall %}
+  {% call field("carbs_g", "Carbs (g)", "number") %}required min="0" max="2000" step="any" inputmode="decimal"{% endcall %}
+  {% call field("fat_g", "Fat (g)", "number") %}required min="0" max="2000" step="any" inputmode="decimal"{% endcall %}
+  {% call field("eaten_on", "Date", "date") %}required max="{{ today_iso }}"{% endcall %}
+</div>

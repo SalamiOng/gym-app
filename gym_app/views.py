@@ -1,10 +1,22 @@
-from datetime import date
+from datetime import date, timedelta
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from .body_weights import add_body_weight, daily_series, list_body_weights, summarize
 from .charts import line_chart
-from .forms import validate_body_weight, validate_workout
+from .forms import MEALS, NUTRIENT_FIELDS, validate_body_weight, validate_food, validate_goals, validate_workout
+from .nutrition import (
+    add_food,
+    delete_food,
+    food_totals,
+    get_food,
+    get_goals,
+    goal_progress,
+    list_foods,
+    meals_for_day,
+    save_goals,
+    update_food,
+)
 from .stats import exercise_summaries, find_exercise, strength_series, workout_stats
 from .workouts import add_workout, delete_workout, get_workout, list_workouts, update_workout
 
@@ -143,6 +155,132 @@ def progress():
         strength=strength,
         strength_chart=line_chart(strength["points"], strength["unit"]) if strength else None,
         today=date.today().isoformat(),
+    ), 400 if errors else 200
+
+
+def _requested_day() -> tuple[date, str | None]:
+    """The day picked with ?date=YYYY-MM-DD (default today), plus a notice if it had to fall back to today."""
+    today = date.today()
+    raw = request.args.get("date", "").strip()
+    if not raw:
+        return today, None
+    try:
+        day = date.fromisoformat(raw)
+    except ValueError:
+        return today, f"“{raw}” isn't a valid date. Showing today instead."
+    if day > today:
+        return today, "You can't view future days. Showing today instead."
+    return day, None
+
+
+def _day_url(endpoint: str, day: date) -> str:
+    # Leave ?date= off for today, so the plain /nutrition URL always means "today".
+    return url_for(endpoint, date=None if day == date.today() else day.isoformat())
+
+
+@bp.route("/nutrition", methods=["GET", "POST"])
+def nutrition():
+    day, notice = _requested_day()
+    errors = {}
+    form = {"meal": "breakfast", "eaten_on": day.isoformat()}
+
+    if request.method == "POST":
+        entry, errors = validate_food(request.form)
+        if entry:
+            add_food(entry)
+            flash(f"Added {entry.name} to {MEALS[entry.meal].lower()}.")
+            # Go to the day the food was logged for, which may differ from the day being viewed.
+            return redirect(_day_url("main.nutrition", entry.eaten_on))
+        form = request.form
+
+    foods = list_foods(day)
+    today = date.today()
+    return render_template(
+        "pages/nutrition.html",
+        day=day,
+        today=today,
+        notice=notice,
+        prev_url=_day_url("main.nutrition", day - timedelta(days=1)),
+        next_url=_day_url("main.nutrition", day + timedelta(days=1)) if day < today else None,
+        goals_url=_day_url("main.nutrition_goals", day),
+        form_action=_day_url("main.nutrition", day),
+        nutrients=goal_progress(food_totals(foods), get_goals()),
+        meals=meals_for_day(foods),
+        has_foods=bool(foods),
+        form=form,
+        errors=errors,
+        meal_options=list(MEALS.items()),
+        today_iso=today.isoformat(),
+    ), 400 if errors else 200
+
+
+@bp.route("/nutrition/<int:food_id>/edit", methods=["GET", "POST"])
+def nutrition_edit(food_id: int):
+    food = get_food(food_id)
+    if food is None:
+        abort(404)
+
+    errors = {}
+    # Pre-fill the form with the saved values.
+    form = {
+        "name": food["name"],
+        "serving": food["serving"],
+        "meal": food["meal"],
+        "eaten_on": food["eaten_on"].isoformat(),
+        **{key: f"{food[key]:g}" for key, _, _ in NUTRIENT_FIELDS},
+    }
+
+    if request.method == "POST":
+        entry, errors = validate_food(request.form)
+        if entry:
+            if not update_food(food_id, entry):
+                abort(404)
+            flash(f"Updated {entry.name}.")
+            return redirect(_day_url("main.nutrition", entry.eaten_on))
+        form = request.form
+
+    return render_template(
+        "pages/edit_food.html",
+        food=food,
+        back_url=_day_url("main.nutrition", food["eaten_on"]),
+        form=form,
+        errors=errors,
+        meal_options=list(MEALS.items()),
+        today_iso=date.today().isoformat(),
+    ), 400 if errors else 200
+
+
+# POST only, like workout deletes: a plain link could be followed by accident.
+@bp.route("/nutrition/<int:food_id>/delete", methods=["POST"])
+def nutrition_delete(food_id: int):
+    food = get_food(food_id)  # read first so we know which day to return to
+    if food is None or not delete_food(food_id):
+        abort(404)
+    flash(f"Deleted {food['name']}.")
+    return redirect(_day_url("main.nutrition", food["eaten_on"]))
+
+
+@bp.route("/nutrition/goals", methods=["GET", "POST"])
+def nutrition_goals():
+    day, _ = _requested_day()  # only used to return to the day you came from
+    errors = {}
+    goals = get_goals()
+    form = {key: "" if getattr(goals, key) is None else f"{getattr(goals, key):g}" for key, _, _ in NUTRIENT_FIELDS}
+
+    if request.method == "POST":
+        new_goals, errors = validate_goals(request.form)
+        if new_goals:
+            save_goals(new_goals)
+            flash("Goals saved.")
+            return redirect(_day_url("main.nutrition", day))
+        form = request.form
+
+    return render_template(
+        "pages/nutrition_goals.html",
+        form_action=_day_url("main.nutrition_goals", day),
+        back_url=_day_url("main.nutrition", day),
+        form=form,
+        errors=errors,
     ), 400 if errors else 200
 
 

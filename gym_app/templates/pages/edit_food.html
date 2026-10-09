@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header %}
+{% block title %}Edit food{% endblock %}
+
+{% block content %}
+  {{ page_header("Edit food", "Change any details, then save.") }}
+
+  <form method="post" action="{{ url_for('main.nutrition_edit', food_id=food.id) }}" class="card workout-form">
+    <h2>{{ food.name }}</h2>
+    {% include "partials/food_fields.html" %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save changes</button>
+      <a href="{{ back_url }}" class="btn">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

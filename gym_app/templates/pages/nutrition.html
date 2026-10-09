@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import page_header, empty_state with context %}
+{% block title %}Nutrition{% endblock %}
+
+{% block content %}
+  {% call page_header("Nutrition", "Log what you eat and see your daily totals against your goals.") %}
+    <a href="{{ goals_url }}" class="btn">{{ icon('target', 16) }} Set goals</a>
+  {% endcall %}
+
+  {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+
+  <nav class="card day-nav" aria-label="Choose a day">
+    <a href="{{ prev_url }}" class="btn btn-sm">{{ icon('chevron-left', 14) }} <span>Previous</span></a>
+    <form method="get" action="{{ url_for('main.nutrition') }}" class="day-picker">
+      <label for="day" class="day-label">
+        {% if day == today %}Today{% elif (today - day).days == 1 %}Yesterday{% else %}{{ day.strftime('%A') }}{% endif %}
+      </label>
+      <input type="date" id="day" name="date" class="select" value="{{ day.isoformat() }}"
+             max="{{ today.isoformat() }}" onchange="this.form.submit()" />
+      <noscript><button type="submit" class="btn btn-sm">Go</button></noscript>
+    </form>
+    {% if next_url %}
+      <a href="{{ next_url }}" class="btn btn-sm"><span>Next</span> {{ icon('chevron-right', 14) }}</a>
+    {% else %}
+      <span class="btn btn-sm is-disabled" aria-disabled="true"><span>Next</span> {{ icon('chevron-right', 14) }}</span>
+    {% endif %}
+  </nav>
+
+  <section class="stat-grid compact" aria-label="Daily totals">
+    {% for n in nutrients %}
+      <div class="card stat">
+        <span class="stat-value">{{ n.total | amount }}<small> {{ n.unit }}</small></span>
+        <span class="muted">{{ n.label }}</span>
+        {% if n.goal %}
+          <div class="meter" aria-hidden="true"><span style="width: {{ n.percent }}%"></span></div>
+          <span class="muted goal-text">
+            of {{ n.goal | amount }} {{ n.unit }} ·
+            {% if n.remaining > 0 %}{{ n.remaining | amount }} left
+            {% elif n.remaining == 0 %}goal reached
+            {% else %}<strong class="over">{{ (-n.remaining) | amount }} over</strong>{% endif %}
+          </span>
+        {% else %}
+          <span class="muted goal-text">No goal set</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+
+  <form method="post" action="{{ form_action }}" class="card workout-form">
+    <h2>Log food</h2>
+    {% include "partials/food_fields.html" %}
+    <button type="submit" class="btn btn-primary">{{ icon('plus', 16) }} Add food</button>
+  </form>
+
+  {% if has_foods %}
+    {% for meal in meals %}
+      <section class="card history" aria-labelledby="meal-{{ meal.key }}">
+        <div class="meal-header">
+          <h2 id="meal-{{ meal.key }}">{{ meal.label }}</h2>
+          {% if meal.foods %}
+            <p class="muted">
+              {{ meal.totals.calories | amount }} kcal · P {{ meal.totals.protein_g | amount }} g ·
+              C {{ meal.totals.carbs_g | amount }} g · F {{ meal.totals.fat_g | amount }} g
+            </p>
+          {% endif %}
+        </div>
+        {% if meal.foods %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Food</th><th class="num">kcal</th><th class="num">Protein</th>
+                  <th class="num">Carbs</th><th class="num">Fat</th>
+                  <th class="num"><span class="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for f in meal.foods %}
+                  <tr>
+                    <td class="strong wrap">{{ f.name }}<span class="serving">{{ f.serving }}</span></td>
+                    <td class="num">{{ f.calories | amount }}</td>
+                    <td class="num">{{ f.protein_g | amount }} g</td>
+                    <td class="num">{{ f.carbs_g | amount }} g</td>
+                    <td class="num">{{ f.fat_g | amount }} g</td>
+                    <td class="num">
+                      <div class="row-actions">
+                        <a href="{{ url_for('main.nutrition_edit', food_id=f.id) }}" class="btn btn-sm"
+                           aria-label="Edit {{ f.name }}">{{ icon('pencil', 14) }} Edit</a>
+                        <form method="post" action="{{ url_for('main.nutrition_delete', food_id=f.id) }}"
+                              onsubmit="return confirm('Delete this food? This cannot be undone.');">
+                          <button type="submit" class="btn btn-sm btn-danger"
+                                  aria-label="Delete {{ f.name }}">{{ icon('trash', 14) }} Delete</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="muted">Nothing logged for {{ meal.label | lower }}.</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+  {% else %}
+    {{ empty_state("apple", "Nothing logged for this day", "Add a food above and it will appear here under its meal.") }}
+  {% endif %}
+{% endblock %}
