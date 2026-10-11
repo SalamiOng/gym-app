@@ -1,6 +1,6 @@
 """Tests for the Progress page: charts, workout stats, strength progression and body weight.
 
-Run with:  .venv/bin/python -m unittest discover -s tests -v
+Run with:  .venv/bin/python -m pytest  (they are unittest-style, so pytest runs them as is)
 Each test uses its own temporary database, so your real data in instance/ is never touched.
 """
 

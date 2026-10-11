@@ -42,10 +42,11 @@
   </div>
 {%- endmacro %}
 
-{# Draws a chart from charts.line_chart. Lines and dots are SVG; axis labels are HTML so they stay readable on phones. #}
+{# Draws a chart from charts.line_chart. Lines and dots are SVG; axis labels are HTML so they stay readable on phones.
+   static/js/charts.js adds tooltips on hover, tap and arrow keys; without it, each dot's <title> still shows on hover. #}
 {% macro line_chart(chart, label) -%}
-  <figure class="chart" role="img" aria-label="{{ label }}">
-    <div class="chart-plot">
+  <figure class="chart">
+    <div class="chart-plot" tabindex="0" role="img" aria-label="{{ label }}">
       {% for tick in chart.y_ticks %}
         <span class="chart-y" style="top: {{ tick.y }}%">{{ tick.label }}</span>
       {% endfor %}
@@ -58,13 +59,38 @@
         {% endif %}
         {% for point in chart.points %}
           {# Zero-length paths with round caps draw as circles that stay round when the chart stretches. #}
-          <g class="chart-point">
+          <g class="chart-point" data-tip="{{ point.label }}" data-x="{{ point.x }}" data-y="{{ point.y }}">
             <title>{{ point.label }}</title>
             <path class="chart-dot-ring" d="M{{ point.x }} {{ point.y }}h0" />
             <path class="chart-dot" d="M{{ point.x }} {{ point.y }}h0" />
           </g>
         {% endfor %}
       </svg>
+      <div class="chart-tip" aria-live="polite" hidden></div>
+    </div>
+    <div class="chart-x{% if chart.x_labels | length == 1 %} single{% endif %}">
+      {% for text in chart.x_labels %}<span>{{ text }}</span>{% endfor %}
+    </div>
+  </figure>
+{%- endmacro %}
+
+{# Draws a chart from charts.bar_chart: grid lines in SVG, bars as HTML so they stay crisp at any width. #}
+{% macro bar_chart(chart, label) -%}
+  <figure class="chart">
+    <div class="chart-plot" tabindex="0" role="img" aria-label="{{ label }}">
+      {% for tick in chart.y_ticks %}
+        <span class="chart-y" style="top: {{ tick.y }}%">{{ tick.label }}</span>
+      {% endfor %}
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        {% for tick in chart.y_ticks %}
+          <line class="chart-grid" x1="0" x2="100" y1="{{ tick.y }}" y2="{{ tick.y }}" />
+        {% endfor %}
+      </svg>
+      {% for bar in chart.bars %}
+        <span class="chart-bar" title="{{ bar.label }}" data-tip="{{ bar.label }}" data-x="{{ bar.x }}" data-y="{{ bar.y }}"
+              style="left: {{ (bar.x - bar.width / 2) | round(3) }}%; width: {{ bar.width }}%; top: {{ bar.y }}%; bottom: {{ (100 - chart.baseline) | round(3) }}%"></span>
+      {% endfor %}
+      <div class="chart-tip" aria-live="polite" hidden></div>
     </div>
     <div class="chart-x{% if chart.x_labels | length == 1 %} single{% endif %}">
       {% for text in chart.x_labels %}<span>{{ text }}</span>{% endfor %}

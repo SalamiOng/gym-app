@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template, request
 
 from . import db
 from .icons import icon
@@ -14,6 +14,9 @@ def create_app(test_config: dict | None = None) -> Flask:
         # Needed for flash messages. Set a real SECRET_KEY env var outside local development.
         SECRET_KEY=os.environ.get("SECRET_KEY", "dev"),
         DATABASE=str(Path(app.instance_path) / "gym.sqlite3"),
+        # Open Food Facts asks apps to identify themselves. No API key is needed. Set this env var to add
+        # contact details, e.g. "GymApp/1.0 (you@example.com)".
+        OPENFOODFACTS_USER_AGENT=os.environ.get("OPENFOODFACTS_USER_AGENT", "GymApp/1.0 (personal fitness tracker)"),
     )
     if test_config:
         app.config.update(test_config)
@@ -26,12 +29,21 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     db.init_app(app)
 
-    from .views import bp
+    from . import api, views
 
-    app.register_blueprint(bp)
+    app.register_blueprint(views.bp)
+    app.register_blueprint(api.bp)
 
     @app.errorhandler(404)
     def not_found(_error):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Not found."), 404
         return render_template("pages/not_found.html"), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(error):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Method not allowed."), 405
+        return error
 
     return app

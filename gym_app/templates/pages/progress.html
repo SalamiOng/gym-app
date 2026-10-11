@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/macros.html" import page_header, empty_state, field, line_chart with context %}
+{% from "partials/macros.html" import page_header, empty_state, field, line_chart, bar_chart with context %}
 {% block title %}Progress{% endblock %}
 
 {% macro short_date(d) -%}
@@ -8,6 +8,18 @@
 
 {% block content %}
   {{ page_header("Progress", "Your training stats, strength gains and body weight over time.") }}
+
+  {% if stats or summary %}
+    <nav class="range-tabs" aria-label="Chart date range">
+      <span class="muted">Charts</span>
+      <div class="segmented">
+        {% for key, label, url in range_links %}
+          <a href="{{ url }}" class="segment{% if key == range_key %} active{% endif %}"
+             {% if key == range_key %}aria-current="true"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </div>
+    </nav>
+  {% endif %}
 
   <h2 class="section-title">Workouts</h2>
 
@@ -42,12 +54,21 @@
           <p class="muted">{{ strength.metric }} ({{ strength.unit }})</p>
         </div>
         <form method="get" action="{{ url_for('main.progress') }}" class="chart-filter">
+          {% if range_key != 'all' %}<input type="hidden" name="range" value="{{ range_key }}" />{% endif %}
           <label class="visually-hidden" for="exercise-select">Exercise</label>
           <select id="exercise-select" name="exercise" class="select" onchange="this.form.submit()">
             {% for exercise in exercises %}
               <option value="{{ exercise.name }}"{% if exercise.key == selected.key %} selected{% endif %}>{{ exercise.name }}</option>
             {% endfor %}
           </select>
+          {% if strength.metrics | length > 1 %}
+            <label class="visually-hidden" for="metric-select">Measure</label>
+            <select id="metric-select" name="metric" class="select" onchange="this.form.submit()">
+              {% for key, text in strength.metrics %}
+                <option value="{{ key }}"{% if key == strength.metric_key %} selected{% endif %}>{{ text }}</option>
+              {% endfor %}
+            </select>
+          {% endif %}
           <noscript><button type="submit" class="btn btn-sm">Show</button></noscript>
         </form>
       </div>
@@ -56,10 +77,17 @@
         <p class="notice" role="status">No workouts found for “{{ unknown_exercise }}”. Showing {{ selected.name }} instead.</p>
       {% endif %}
 
-      {{ line_chart(strength_chart, strength.metric ~ " for " ~ selected.name) }}
+      {% if strength_chart %}
+        {{ line_chart(strength_chart, strength.metric ~ " for " ~ selected.name) }}
+      {% endif %}
 
       <p class="muted chart-caption">
-        {% if strength.change is none %}
+        {% if not strength_chart %}
+          No {{ selected.name }} sessions in {{ range_text }}.
+          <a href="{{ all_time_url }}" class="link">Show all time</a>
+        {% elif strength.change is none and range_key != 'all' %}
+          One session in {{ range_text }}.
+        {% elif strength.change is none %}
           One session so far. Log {{ selected.name }} on another day to see a trend.
         {% elif strength.change == 0 %}
           No change since {{ short_date(strength.since) }}.
@@ -68,6 +96,16 @@
           since {{ short_date(strength.since) }}.
         {% endif %}
       </p>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Training frequency</h2>
+          <p class="muted">Days trained per week ({{ range_text }})</p>
+        </div>
+      </div>
+      {{ bar_chart(training, "Days trained per week") }}
     </section>
 
     <section class="card history">
@@ -130,7 +168,7 @@
     </section>
   {% endif %}
 
-  {% if weight_chart %}
+  {% if summary %}
     <section class="card">
       <div class="card-header">
         <div>
@@ -138,9 +176,17 @@
           <p class="muted">One point per day (lb)</p>
         </div>
       </div>
-      {{ line_chart(weight_chart, "Body weight over time") }}
-      {% if weight_chart.points | length == 1 %}
-        <p class="muted chart-caption">Log your weight on another day to see a trend.</p>
+      {% if weight_chart %}
+        {{ line_chart(weight_chart, "Body weight over time") }}
+        {% if weight_chart.points | length == 1 and range_key == 'all' %}
+          <p class="muted chart-caption">Log your weight on another day to see a trend.</p>
+        {% elif weight_chart.points | length == 1 %}
+          <p class="muted chart-caption">One weigh-in in {{ range_text }}.</p>
+        {% endif %}
+      {% else %}
+        <p class="muted">
+          No weigh-ins in {{ range_text }}. <a href="{{ all_time_url }}" class="link">Show all time</a>
+        </p>
       {% endif %}
     </section>
   {% endif %}
@@ -176,4 +222,8 @@
   {% else %}
     {{ empty_state("scale", "No body weight logged yet", "Add your first entry above to start tracking.") }}
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/charts.js') }}" defer></script>
 {% endblock %}

@@ -68,22 +68,86 @@ def workout_stats(workouts: list[dict], summaries: list[ExerciseSummary], today:
     }
 
 
-def strength_series(workouts: list[dict], key: str) -> dict:
-    """Best set per day for one exercise: heaviest weight, or most reps if it's only ever done at 0 kg."""
-    rows = [w for w in workouts if exercise_key(w["exercise"]) == key]
-    by_weight = any(w["weight"] > 0 for w in rows)
-    field, unit = ("weight", "kg") if by_weight else ("reps", "reps")
+# Chart date ranges for the Progress page: ?range=<key> -> (button label, days back; None = everything).
+RANGES = {"1m": ("1M", 30), "3m": ("3M", 91), "1y": ("1Y", 365), "all": ("All", None)}
+RANGE_DESCRIPTIONS = {"1m": "the last month", "3m": "the last 3 months", "1y": "the last year", "all": "all time"}
+DEFAULT_RANGE = "all"
 
-    best_per_day: dict[date, float] = {}
+# Strength chart metrics: ?metric=<key> -> label. Bodyweight-only exercises use reps instead of kg.
+METRICS = {
+    "best": ("Heaviest set per session", "Most reps in a set per session"),
+    "e1rm": ("Best estimated 1RM per session", None),  # needs weight, so not offered for bodyweight moves
+    "volume": ("Volume per session (sets × reps × weight)", "Total reps per session"),
+}
+MAX_WEEKS = 52
+
+
+def range_start(range_key: str, today: date) -> date | None:
+    """First day included in a chart range, or None for all time. Unknown keys mean all time."""
+    days = RANGES.get(range_key, RANGES[DEFAULT_RANGE])[1]
+    return None if days is None else today - timedelta(days=days - 1)
+
+
+def strength_series(workouts: list[dict], key: str, metric: str = "best", since: date | None = None) -> dict:
+    """One value per session (day) for one exercise, oldest first.
+
+    "best": heaviest set, or most reps if it's only ever done at 0 kg. "e1rm": best estimated 1RM.
+    "volume": sets × reps × weight added up (total reps for bodyweight moves). Unknown metrics mean "best".
+    `since` drops sessions before that day.
+    """
+    rows = [w for w in workouts if exercise_key(w["exercise"]) == key]
+    # Decided on every session, not just those in range, so the unit doesn't flip when the range changes.
+    by_weight = any(w["weight"] > 0 for w in rows)
+    available = [k for k, labels in METRICS.items() if labels[0 if by_weight else 1]]
+    if metric not in available:
+        metric = "best"
+
+    def value(w: dict) -> float:
+        if metric == "e1rm":
+            return estimated_1rm(w["weight"], w["reps"])
+        if metric == "volume":
+            return w["sets"] * w["reps"] * (w["weight"] if by_weight else 1)
+        return w["weight"] if by_weight else w["reps"]
+
+    per_day: dict[date, float] = {}
     for w in rows:
-        best_per_day[w["performed_on"]] = max(best_per_day.get(w["performed_on"], 0), w[field])
-    points = sorted(best_per_day.items())
+        if since and w["performed_on"] < since:
+            continue
+        day = w["performed_on"]
+        if metric == "volume":
+            per_day[day] = per_day.get(day, 0) + value(w)
+        else:
+            per_day[day] = max(per_day.get(day, 0), value(w))
+    points = sorted((day, round(v, 1)) for day, v in per_day.items())
 
     return {
         "points": points,
-        "unit": unit,
-        "metric": "Heaviest set per session" if by_weight else "Most reps in a set per session",
-        # None with one session: nothing to compare against yet. Rounded to hide float noise.
+        "unit": "kg" if by_weight else "reps",
+        "metric": METRICS[metric][0 if by_weight else 1],
+        "metric_key": metric,
+        "metrics": [(k, METRICS[k][0 if by_weight else 1]) for k in available],
+        # None with fewer than two sessions: nothing to compare against yet. Rounded to hide float noise.
         "change": round(points[-1][1] - points[0][1], 2) if len(points) > 1 else None,
-        "since": points[0][0],
+        "since": points[0][0] if points else None,
     }
+
+
+def weekly_training(workouts: list[dict], today: date, since: date | None) -> list[dict]:
+    """Training days and sets for each week (Monday to Sunday), oldest first, including empty weeks.
+
+    Starts at the week containing `since` (or the first workout for all time), and covers at most MAX_WEEKS.
+    """
+    if not workouts:
+        return []
+    this_week = today - timedelta(days=today.weekday())
+    first_day = since or min(w["performed_on"] for w in workouts)
+    first_week = max(first_day - timedelta(days=first_day.weekday()), this_week - timedelta(weeks=MAX_WEEKS - 1))
+
+    weeks = {first_week + timedelta(weeks=i): {"days": set(), "sets": 0}
+             for i in range((this_week - first_week).days // 7 + 1)}
+    for w in workouts:
+        week = w["performed_on"] - timedelta(days=w["performed_on"].weekday())
+        if week in weeks:
+            weeks[week]["days"].add(w["performed_on"])
+            weeks[week]["sets"] += w["sets"]
+    return [{"week_start": week, "days": len(data["days"]), "sets": data["sets"]} for week, data in sorted(weeks.items())]

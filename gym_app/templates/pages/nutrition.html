@@ -46,7 +46,9 @@
     {% endfor %}
   </section>
 
-  <form method="post" action="{{ form_action }}" class="card workout-form">
+  {% include "partials/barcode_lookup.html" %}
+
+  <form method="post" action="{{ form_action }}" class="card workout-form" id="log-food">
     <h2>Log food</h2>
     {% include "partials/food_fields.html" %}
     <button type="submit" class="btn btn-primary">{{ icon('plus', 16) }} Add food</button>
@@ -106,4 +108,8 @@
   {% else %}
     {{ empty_state("apple", "Nothing logged for this day", "Add a food above and it will appear here under its meal.") }}
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/barcode.js') }}" defer></script>
 {% endblock %}

@@ -839,3 +839,194 @@ a {
   font-weight: 400;
   color: var(--muted);
 }
+
+/* Barcode lookup (Nutrition page) */
+
+.barcode {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.barcode-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.barcode-form .btn {
+  align-self: stretch;
+}
+
+.barcode-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.barcode-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.barcode .notice {
+  margin: 0;
+}
+
+.notice-ok {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+
+.notice-error {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+
+.scanner {
+  width: min(480px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.scanner::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+.scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.scanner-header h2 {
+  margin: 0;
+}
+
+.scanner-header .btn {
+  align-self: center;
+}
+
+.scanner-view {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 12px;
+}
+
+.scanner-view video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-guide {
+  position: absolute;
+  inset: 30% 12%;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.35);
+}
+
+/* Interactive charts (Progress page) */
+
+.range-tabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.segment {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.segment:hover {
+  color: var(--text);
+}
+
+.segment.active {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.chart-filter {
+  flex-wrap: wrap;
+}
+
+.chart-plot {
+  /* Horizontal drags scrub through the chart on touch screens; vertical drags still scroll the page. */
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.chart-plot:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+
+.chart-point.is-active .chart-dot-ring {
+  stroke-width: 15;
+}
+
+.chart-bar {
+  position: absolute;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--text);
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.chart-bar.is-active {
+  opacity: 1;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 12px));
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.chart-tip.start {
+  transform: translate(-12px, calc(-100% - 12px));
+}
+
+.chart-tip.end {
+  transform: translate(calc(-100% + 12px), calc(-100% - 12px));
+}
+
+@media (max-width: 480px) {
+  .chart-filter,
+  .chart-filter .select {
+    width: 100%;
+  }
+}

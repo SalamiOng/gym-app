@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 
 from .body_weights import add_body_weight, daily_series, list_body_weights, summarize
-from .charts import line_chart
+from .charts import bar_chart, line_chart
+from .food_lookup import BarcodeLookupError, lookup_barcode
 from .forms import MEALS, NUTRIENT_FIELDS, validate_body_weight, validate_food, validate_goals, validate_workout
 from .nutrition import (
     add_food,
@@ -17,7 +18,17 @@ from .nutrition import (
     save_goals,
     update_food,
 )
-from .stats import exercise_summaries, find_exercise, strength_series, workout_stats
+from .stats import (
+    DEFAULT_RANGE,
+    RANGE_DESCRIPTIONS,
+    RANGES,
+    exercise_summaries,
+    find_exercise,
+    range_start,
+    strength_series,
+    weekly_training,
+    workout_stats,
+)
 from .workouts import add_workout, delete_workout, get_workout, list_workouts, update_workout
 
 bp = Blueprint("main", __name__)
@@ -117,6 +128,19 @@ def exercises():
     return render_template("pages/exercises.html", exercises=EXERCISES)
 
 
+def _short_date(d: date) -> str:
+    return f"{d.day} {d:%b}"
+
+
+def training_chart(weeks: list[dict]):
+    """Bar chart of training days per week, from stats.weekly_training."""
+    return bar_chart([
+        (f"w/c {_short_date(w['week_start'])}", w["days"],
+         f"Week of {_short_date(w['week_start'])}: {w['days']} {'day' if w['days'] == 1 else 'days'}, {w['sets']} sets")
+        for w in weeks
+    ])
+
+
 @bp.route("/progress", methods=["GET", "POST"])
 def progress():
     errors = {}
@@ -130,16 +154,33 @@ def progress():
             return redirect(url_for("main.progress"))
         form = request.form
 
+    today = date.today()
     entries = list_body_weights()
     workouts = list_workouts()
     exercises = exercise_summaries(workouts)
+
+    # ?range=1m|3m|1y|all limits the charts (stats and records stay all-time). Unknown values mean all time.
+    range_key = request.args.get("range", DEFAULT_RANGE)
+    if range_key not in RANGES:
+        range_key = DEFAULT_RANGE
+    since = range_start(range_key, today)
 
     # ?exercise=Squat picks the strength chart; default to the most recently trained exercise.
     requested = request.args.get("exercise", "").strip()
     selected = find_exercise(exercises, requested) if requested else None
     if selected is None and exercises:
         selected = exercises[0]
-    strength = strength_series(workouts, selected.key) if selected else None
+    metric = request.args.get("metric", "best")
+    strength = strength_series(workouts, selected.key, metric, since) if selected else None
+
+    def progress_url(**changes) -> str:
+        # Keep the other choices when one changes; leave defaults out so URLs stay short.
+        params = {"range": range_key, "exercise": selected.name if requested and selected else None,
+                  "metric": strength["metric_key"] if strength else None, **changes}
+        defaults = {"range": DEFAULT_RANGE, "metric": "best"}
+        return url_for("main.progress", **{k: v for k, v in params.items() if v and v != defaults.get(k)})
+
+    weight_series = [(day, weight) for day, weight in daily_series(entries) if not since or day >= since]
 
     return render_template(
         "pages/progress.html",
@@ -147,14 +188,19 @@ def progress():
         errors=errors,
         entries=entries,
         summary=summarize(entries),
-        weight_chart=line_chart(daily_series(entries), "lb"),
-        stats=workout_stats(workouts, exercises, date.today()),
+        weight_chart=line_chart(weight_series, "lb"),
+        stats=workout_stats(workouts, exercises, today),
         exercises=exercises,
         selected=selected,
         unknown_exercise=requested if requested and find_exercise(exercises, requested) is None else None,
         strength=strength,
         strength_chart=line_chart(strength["points"], strength["unit"]) if strength else None,
-        today=date.today().isoformat(),
+        training=training_chart(weekly_training(workouts, today, since)),
+        range_key=range_key,
+        range_text=RANGE_DESCRIPTIONS[range_key],
+        range_links=[(key, label, progress_url(range=key)) for key, (label, _) in RANGES.items()],
+        all_time_url=progress_url(range="all"),
+        today=today.isoformat(),
     ), 400 if errors else 200
 
 
@@ -178,11 +224,26 @@ def _day_url(endpoint: str, day: date) -> str:
     return url_for(endpoint, date=None if day == date.today() else day.isoformat())
 
 
+def _barcode_prefill(raw: str, form: dict) -> dict:
+    """Look up ?barcode= and copy what Open Food Facts knows into the food form. Returns the result for the page."""
+    try:
+        product = lookup_barcode(raw, current_app.config["OPENFOODFACTS_USER_AGENT"])
+    except BarcodeLookupError as error:
+        return {"ok": False, "barcode": raw, "message": str(error)}
+    form.update({"name": product.name, "serving": product.serving})
+    form.update({key: f"{getattr(product, key):g}" for key, _, _ in NUTRIENT_FIELDS if getattr(product, key) is not None})
+    return {"ok": True, "barcode": product.barcode, "product": product}
+
+
 @bp.route("/nutrition", methods=["GET", "POST"])
 def nutrition():
     day, notice = _requested_day()
     errors = {}
     form = {"meal": "breakfast", "eaten_on": day.isoformat()}
+
+    # ?barcode= comes from the scan / lookup form: pre-fill "Log food" so the user can check it and pick a meal.
+    raw_barcode = request.args.get("barcode", "").strip()
+    lookup = _barcode_prefill(raw_barcode, form) if raw_barcode and request.method == "GET" else None
 
     if request.method == "POST":
         entry, errors = validate_food(request.form)
@@ -211,6 +272,7 @@ def nutrition():
         errors=errors,
         meal_options=list(MEALS.items()),
         today_iso=today.isoformat(),
+        lookup=lookup,
     ), 400 if errors else 200
 
 

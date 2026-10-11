@@ -1,0 +1,44 @@
+{# Barcode lookup for the Nutrition page. Expects `lookup` (None, or the result of views._barcode_prefill) and `day`/`today`.
+   Typing a barcode works everywhere; static/js/barcode.js adds camera scanning where the browser allows it. #}
+<section class="card barcode" aria-labelledby="barcode-title">
+  <div>
+    <h2 id="barcode-title">Scan a barcode</h2>
+    <p class="muted">Look up a packaged food on Open Food Facts and fill in the form below.</p>
+  </div>
+
+  <form method="get" action="{{ url_for('main.nutrition') }}" class="barcode-form" data-barcode-form>
+    {% if day != today %}<input type="hidden" name="date" value="{{ day.isoformat() }}" />{% endif %}
+    <label class="visually-hidden" for="barcode">Barcode</label>
+    <input id="barcode" name="barcode" class="select barcode-input" value="{{ lookup.barcode if lookup else '' }}"
+           inputmode="numeric" autocomplete="off" placeholder="e.g. 3017620422003" maxlength="20" required
+           {% if lookup and not lookup.ok %}aria-invalid="true" aria-describedby="barcode-status"{% endif %} />
+    <button type="submit" class="btn btn-sm">{{ icon('search', 14) }} Look up</button>
+    <button type="button" class="btn btn-sm btn-primary" data-scan-start hidden>{{ icon('scan', 14) }} Scan</button>
+  </form>
+
+  {% if lookup %}
+    {% if lookup.ok %}
+      <p class="notice notice-ok" id="barcode-status" role="status">
+        Found <strong>{{ lookup.product.name }}</strong>
+        ({{ 'per serving' if lookup.product.per_serving else 'per 100 g' }}).
+        {% if lookup.product.missing %}Some nutrition values are missing, so fill those in.{% endif %}
+        Check the values, pick a meal and add it.
+      </p>
+    {% else %}
+      <p class="notice notice-error" id="barcode-status" role="alert">{{ lookup.message }}</p>
+    {% endif %}
+  {% endif %}
+  <p class="notice notice-error" data-scan-error role="alert" hidden></p>
+
+  <dialog class="scanner" data-scanner aria-labelledby="scanner-title">
+    <div class="scanner-header">
+      <h2 id="scanner-title">Point your camera at a barcode</h2>
+      <button type="button" class="btn btn-sm" data-scan-stop>Close</button>
+    </div>
+    <div class="scanner-view">
+      <video data-scan-video muted playsinline></video>
+      <span class="scanner-guide" aria-hidden="true"></span>
+    </div>
+    <p class="muted" data-scan-status>Starting camera…</p>
+  </dialog>
+</section>
